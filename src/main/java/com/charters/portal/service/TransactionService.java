@@ -1,0 +1,75 @@
+package com.charters.portal.service;
+
+import com.charters.portal.model.Reward;
+import com.charters.portal.model.Transaction;
+import com.charters.portal.repository.TransactionRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+public class TransactionService {
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    public Reward fetchRewards(Integer customerId){
+        LocalDate date = getDate();
+        List<Transaction> transactions = transactionRepository.findByCustomerIdAndTransactionDateGreaterThan(customerId, date);
+        Integer totalRewards = getTotalRewards(transactions);
+        Map<Month, Integer> monthlyWiseRewards = getMonthlyWiseRewards(transactions);
+        return Reward.builder().customerId(customerId).totalRewards(totalRewards).monthlyRewards(monthlyWiseRewards).build();
+
+    }
+
+    private Integer getTotalRewards(List<Transaction> transactions) {
+        return transactions.stream()
+                    .map(Transaction::getRewards)
+                    .reduce(0, Integer::sum);
+    }
+
+    private Map<Month, Integer> getMonthlyWiseRewards(List<Transaction> transactions) {
+
+        final Map<String, TemporalAdjuster> ADJUSTERS = new HashMap<>();
+        ADJUSTERS.put("month", TemporalAdjusters.firstDayOfMonth());
+        Map<LocalDate, List<Transaction>> result = transactions.stream()
+                .collect(Collectors.groupingBy(item -> item.getTransactionDate()
+                        .with(ADJUSTERS.get("month"))));
+        Map<Month, Integer> monthlyWiseMap = new HashMap<>();
+        result.entrySet().stream().forEach( item -> {
+            List<Transaction> transactionList = item.getValue();
+            Integer reduce = transactionList.stream().map(Transaction::getRewards).reduce(0, Integer::sum);
+            monthlyWiseMap.put(item.getKey().getMonth(), reduce);
+        });
+        return monthlyWiseMap;
+    }
+
+    public List<Transaction> fetchTransactions(Integer customerId){
+        return transactionRepository.findByCustomerId(customerId);
+    }
+
+    public void save(Transaction transaction) {
+        Integer rewards = calculateRewards(transaction.getAmount());
+        transaction.setRewards(rewards);
+        Transaction save = transactionRepository.save(transaction);
+        log.info("Saved record to database successfully={}", save.toString());
+    }
+
+    public LocalDate getDate() {
+        return LocalDate.now().minusMonths(2).withDayOfMonth(1);
+    }
+
+    private Integer calculateRewards(Integer amount) {
+        return amount > 50 ? amount > 100 ? (amount - 100) * 2 + 50 : amount - 50 : 0;
+    }
+}
