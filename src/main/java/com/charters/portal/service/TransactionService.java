@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TransactionService {
-    public static final String MONTH = "month";
     @Autowired
     private TransactionRepository transactionRepository;
 
@@ -26,8 +25,7 @@ public class TransactionService {
         List<Transaction> transactions = transactionRepository.findByCustomerIdAndTransactionDateGreaterThan(customerId, date);
         Integer totalRewards = getTotalRewards(transactions);
         Map<Month, Integer> monthlyWiseRewards = getMonthlyWiseRewards(transactions);
-        return Reward.builder().customerId(customerId).totalRewards(totalRewards).monthlyRewards(monthlyWiseRewards).build();
-
+        return Reward.builder().customerId(customerId).totalRewards(totalRewards).rewardsByMonthly(monthlyWiseRewards).build();
     }
 
     private Integer getTotalRewards(List<Transaction> transactions) {
@@ -38,15 +36,15 @@ public class TransactionService {
 
     private Map<Month, Integer> getMonthlyWiseRewards(List<Transaction> transactions) {
 
-        Map<Month, List<Transaction>> transactionsByMonth = transactions.stream()
+        Map<Month, List<Transaction>> transactionsByMonthly = transactions.stream()
                 .collect(Collectors.groupingBy(item -> item.getTransactionDate().getMonth()));
 
-        Map<Month, Integer> monthlyWiseMap = new HashMap<>();
-        transactionsByMonth.forEach((key, value) -> {
-            monthlyWiseMap.put(key, value.stream().mapToInt(Transaction::getRewards).sum());
+        Map<Month, Integer> rewardsByMonthly = new HashMap<>();
+        transactionsByMonthly.forEach((key, value) -> {
+            rewardsByMonthly.put(key, value.stream().mapToInt(Transaction::getRewards).reduce(0, Integer::sum));
         });
 
-        return monthlyWiseMap;
+        return rewardsByMonthly;
     }
 
     public List<Transaction> fetchTransactions(Integer customerId){
@@ -57,10 +55,9 @@ public class TransactionService {
         Integer rewards = calculateRewards(transaction.getAmount());
         transaction.setRewards(rewards);
         Transaction save = transactionRepository.save(transaction);
-        log.info("Saved record to database successfully={}", save.toString());
     }
 
-    public LocalDate getDate() {
+    private LocalDate getDate() {
         return LocalDate.now().minusMonths(2).withDayOfMonth(1);
     }
 
