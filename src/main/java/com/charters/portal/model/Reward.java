@@ -15,5 +15,5 @@ import java.util.Map;
 public class Reward {
 	Integer customerId;
 	Integer totalRewards;
-	Map<Month, Integer> monthlyRewards;
+	Map<Month, Integer> rewardsByMonthly;
 }
