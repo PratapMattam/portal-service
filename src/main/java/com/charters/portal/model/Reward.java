@@ -13,7 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class Reward {
-	Integer customerId;
-	Integer totalRewards;
-	Map<Month, Integer> rewardsByMonthly;
+	private Integer customerId;
+	private Integer totalRewards;
+	private Map<Month, Integer> rewardsByMonthly;
 }
