@@ -1,4 +1,4 @@
-**1. Seed data inserted for the customerId : 12345 for testing purposes**
+**1. Seed data has been inserted for the customerId 12345 for testing purposes**
 
 **2. Curl to get rewards for a specific customer in the last 3 months:**
 
