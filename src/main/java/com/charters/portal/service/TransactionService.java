@@ -7,11 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.temporal.TemporalAdjuster;
-import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +17,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TransactionService {
+    public static final String MONTH = "month";
     @Autowired
     private TransactionRepository transactionRepository;
 
@@ -40,17 +38,14 @@ public class TransactionService {
 
     private Map<Month, Integer> getMonthlyWiseRewards(List<Transaction> transactions) {
 
-        final Map<String, TemporalAdjuster> ADJUSTERS = new HashMap<>();
-        ADJUSTERS.put("month", TemporalAdjusters.firstDayOfMonth());
-        Map<LocalDate, List<Transaction>> result = transactions.stream()
-                .collect(Collectors.groupingBy(item -> item.getTransactionDate()
-                        .with(ADJUSTERS.get("month"))));
+        Map<Month, List<Transaction>> transactionsByMonth = transactions.stream()
+                .collect(Collectors.groupingBy(item -> item.getTransactionDate().getMonth()));
+
         Map<Month, Integer> monthlyWiseMap = new HashMap<>();
-        result.entrySet().stream().forEach( item -> {
-            List<Transaction> transactionList = item.getValue();
-            Integer reduce = transactionList.stream().map(Transaction::getRewards).reduce(0, Integer::sum);
-            monthlyWiseMap.put(item.getKey().getMonth(), reduce);
+        transactionsByMonth.forEach((key, value) -> {
+            monthlyWiseMap.put(key, value.stream().mapToInt(Transaction::getRewards).sum());
         });
+
         return monthlyWiseMap;
     }
 
