@@ -64,4 +64,8 @@ public class TransactionService {
     private Integer calculateRewards(Integer amount) {
         return amount > 50 ? amount > 100 ? (amount - 100) * 2 + 50 : amount - 50 : 0;
     }
+
+    private void testMethod(){
+        // nothing to add
+    }
 }
