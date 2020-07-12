@@ -24,6 +24,7 @@ public class TransactionController {
 
 	@GetMapping("/{customerId}")
 	public List<Transaction> getTransactions(@PathVariable Integer customerId) {
+		// pratap
 		return transactionService.fetchTransactions(customerId);
 	}
 }
